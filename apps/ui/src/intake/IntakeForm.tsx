@@ -111,7 +111,18 @@ export function IntakeForm({ onCreated }: Props): JSX.Element {
         <input
           type="checkbox"
           style={{ marginTop: 2 }}
-          onChange={(e) => setForm((prev) => ({ ...prev, authorized: e.target.checked || undefined }))}
+          onChange={(e) => {
+            const checked = e.target.checked;
+            setForm((prev) => {
+              const next = { ...prev };
+              if (checked) {
+                next.authorized = true;
+              } else {
+                delete next.authorized;
+              }
+              return next;
+            });
+          }}
         />
         <span>
           I authorize the Software Immune System to investigate this repository, collect evidence,

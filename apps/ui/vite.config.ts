@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 
 // node: 09 — Vite config for the SIS developer interface
 export default defineConfig({
+  base: './',
   plugins: [react()],
   server: {
     port: 5173,
