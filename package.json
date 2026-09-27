@@ -1,0 +1,29 @@
+{
+  "name": "software-immune-system",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Software Immune System — autonomous debugging and repair platform",
+  "scripts": {
+    "build": "pnpm -r run build",
+    "test": "vitest run --workspace vitest.workspace.ts",
+    "test:watch": "vitest --workspace vitest.workspace.ts",
+    "typecheck": "pnpm -r run typecheck",
+    "lint": "eslint . --ext .ts,.tsx",
+    "migrate": "node-pg-migrate up",
+    "migrate:create": "node-pg-migrate create",
+    "clean": "pnpm -r run clean"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "@vitest/coverage-v8": "^2.1.8",
+    "eslint": "^8.57.1",
+    "node-pg-migrate": "^7.7.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

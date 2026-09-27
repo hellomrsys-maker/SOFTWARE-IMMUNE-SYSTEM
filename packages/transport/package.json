@@ -1,0 +1,29 @@
+{
+  "name": "@sis/transport",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SIS transport — durable queue, incident state machine, task scheduler, authorization engine (§03)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": "./dist/index.js" },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "pg": "^8.13.1",
+    "zod": "^3.23.8",
+    "pino": "^9.5.0",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
+    "@types/uuid": "^10.0.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}

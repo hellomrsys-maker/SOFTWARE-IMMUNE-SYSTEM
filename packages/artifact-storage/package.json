@@ -1,0 +1,28 @@
+{
+  "name": "@sis/artifact-storage",
+  "version": "0.0.1",
+  "description": "Artifact storage — SHA-256 integrity, quota enforcement, cleanup (node 11.03)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@sis/shared": "workspace:*",
+    "@sis/logger": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0",
+    "@types/node": "^20.14.0"
+  }
+}

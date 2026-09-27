@@ -1,0 +1,32 @@
+{
+  "name": "@sis/db",
+  "version": "0.0.1",
+  "description": "Database access layer and migrations for the Software Immune System",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "migrate": "node --experimental-vm-modules dist/migrate.js",
+    "migrate:dev": "DATABASE_URL=$DATABASE_URL node --loader ts-node/esm src/migrate.ts"
+  },
+  "dependencies": {
+    "pg": "^8.12.0",
+    "@sis/shared": "workspace:*",
+    "@sis/logger": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0",
+    "@types/pg": "^8.11.6",
+    "@types/node": "^20.14.0"
+  }
+}

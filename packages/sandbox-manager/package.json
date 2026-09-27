@@ -1,0 +1,30 @@
+{
+  "name": "@sis/sandbox-manager",
+  "version": "0.0.1",
+  "description": "Isolated execution environment manager using dockerode (node 11.04)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "dockerode": "^4.0.2",
+    "@sis/shared": "workspace:*",
+    "@sis/logger": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0",
+    "@types/dockerode": "^3.3.29",
+    "@types/node": "^20.14.0"
+  }
+}

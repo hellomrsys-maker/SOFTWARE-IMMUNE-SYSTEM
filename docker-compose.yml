@@ -1,0 +1,151 @@
+# syntax=docker/dockerfile:1.7
+# node: 11.04 — Sandbox manager — docker-compose environment
+# All sandbox restrictions listed in section 11.04 are enforced here as container
+# runtime flags, NOT via prompts or model instructions.  Enforcement in code is the
+# only acceptable boundary (Rule 5).
+
+services:
+
+  # ─── PostgreSQL — Section 11.02 ───────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sis
+      POSTGRES_PASSWORD: sis_password   # placeholder — never use in production
+      POSTGRES_DB: sis_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./platform/persistence/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sis -d sis_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ─── Managed Application — Section 01 ────────────────────────────────────
+  managed-app:
+    build:
+      context: .
+      dockerfile: packages/managed-app/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://sis:sis_password@postgres:5432/sis_dev
+      # IMPORTANT: fake test credential — no real payment processing
+      PAYMENT_API_KEY: test-key-not-real
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ─── Control API — Section 11.01 ─────────────────────────────────────────
+  control-api:
+    build:
+      context: .
+      dockerfile: apps/control-api/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://sis:sis_password@postgres:5432/sis_dev
+      CONTROL_API_PORT: "3000"
+      JWT_SECRET: change-me-in-production   # placeholder only
+      BOB_INTEGRATION_ENABLED: "false"
+      BOB_API_ENDPOINT: ""
+      BOB_API_KEY: ""                        # placeholder — no real Bob key here
+      ARTIFACT_STORAGE_PATH: /var/sis/artifacts
+    ports:
+      - "3000:3000"
+    volumes:
+      - artifact_storage:/var/sis/artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ─── Background Worker — Section 03 ──────────────────────────────────────
+  worker:
+    build:
+      context: .
+      dockerfile: apps/background-worker/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://sis:sis_password@postgres:5432/sis_dev
+      WORKER_CONCURRENCY: "4"
+      BOB_INTEGRATION_ENABLED: "false"
+      BOB_API_ENDPOINT: ""
+      BOB_API_KEY: ""
+      ARTIFACT_STORAGE_PATH: /var/sis/artifacts
+      # Controls which container runtime the sandbox manager uses
+      SANDBOX_RUNTIME: docker
+    volumes:
+      - artifact_storage:/var/sis/artifacts
+      # The worker needs access to the Docker socket only to spawn sandbox containers.
+      # IMPORTANT (11.04): This socket is mounted for the worker only, and the
+      # sandbox manager enforces that spawned containers:
+      #   - run as unprivileged users (--user)
+      #   - use --read-only rootfs with explicit tmpfs mounts
+      #   - do NOT use --network host
+      #   - receive no production secrets in environment
+      #   - are subject to --cpus, --memory, --pids-limit, and --timeout
+      # The worker itself never grants these privileges to any sandbox container it spawns.
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ─── React UI — Section 09 ────────────────────────────────────────────────
+  ui:
+    build:
+      context: .
+      dockerfile: apps/ui/Dockerfile
+    restart: unless-stopped
+    environment:
+      VITE_CONTROL_API_URL: http://localhost:3000
+      VITE_BOB_INTEGRATION_ENABLED: "false"
+    ports:
+      - "5173:5173"
+    depends_on:
+      - control-api
+
+  # ─── Isolated Execution Sandbox — Section 11.04 ───────────────────────────
+  # This service defines the IMAGE used for isolated execution containers.
+  # Actual sandbox containers are spawned by the sandbox manager (platform/sandbox)
+  # as ephemeral containers — they are NOT long-running services.
+  #
+  # Restrictions enforced by the sandbox manager when spawning from this image:
+  #   11.04.01  Unprivileged execution:    --user 65534:65534 (nobody)
+  #   11.04.02  No production secrets:     no secret env vars injected
+  #   11.04.03  Restricted filesystem:     --read-only --tmpfs /tmp:size=256m,noexec
+  #   11.04.04  Restricted outbound net:   --network sis_sandbox_net (egress-blocked)
+  #   11.04.05  CPU limit:                 --cpus 1.0
+  #   11.04.06  Memory limit:              --memory 512m
+  #   11.04.07  PID limit:                 --pids-limit 128
+  #   11.04.08  Execution time limit:      --stop-timeout 120
+  #   11.04.09  No host-control socket:    docker.sock NOT mounted in sandbox containers
+  #
+  # These constraints are enforced in the sandbox manager's process-spawner code,
+  # not in prompts or model instructions (Rule 5).
+  sandbox:
+    image: node:20-alpine
+    # Intentionally no ports, no volumes, no persistent state.
+    # This entry exists only to pre-pull the image; actual execution is ephemeral.
+    profiles: ["sandbox-init"]   # only pulled explicitly, not started in normal compose up
+
+networks:
+  default:
+    name: sis_network
+
+  # Egress-restricted network for sandbox containers
+  sis_sandbox_net:
+    name: sis_sandbox_net
+    driver: bridge
+    internal: true   # no external routing — satisfies 11.04.04
+
+volumes:
+  postgres_data:
+  artifact_storage:
